@@ -1,1 +1,19 @@
 This repository holds HTML and JavaScript files for examples based on Yoshiki Ohshima's NaClSqueak.
+
+It works with a Squeak 4.3 trunk (non-Cog) image, fully updated, with the following packages (on VPRI's internal Monticello repositories) added in the order given here.
+
+from updates/exploratory/packages
+	XML-Parser
+	JSON
+	DynamicBindings
+	KomServices
+	KomHttpServer
+	Seaside.PartialForNaCl
+	NativeClientBridge
+
+from updates/exploratory/worlds-packages
+	Worlds
+	WorldsExamples
+
+As of 30 Jan 2012 these loads will give various warnings - especially Seaside.
+

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Squeak on Native Client!</title>
+
+<style type="text/css">
+table.aelt{border:0;padding:0;border-spacing:0;cellpadding:0;cellspacing:0;margin-bottom:6pt}
+div,td{color:#000}
+.f{color:#6f6f6f}
+.flc,.fl:link{color:#77c}
+a:link,.w,a.w:link,.w a:link,.q:visited,.q:link,.q:active,.q{color:#00c}
+a:visited,.fl:visited{color:#551a8b}
+a:active,.fl:active{color:red}
+.t{background:#e5ecf9;color:#000}
+.bb{border-bottom:1px solid #36c}
+.bt{border-top:1px solid #36c}
+.j{width:38em;font-size:10pt}
+.h{color:#36c}
+.i,.i:link{color:#a90a08}
+.a,.a:link{color:green}
+.z{display:none}
+div.n{margin-top:1ex}
+.n a{font-size:10pt;color:#000}
+.n .i{font-size:10pt;font-weight:bold}
+.b a{font-size:12pt;color:#00c;font-weight:bold}
+.ch{cursor:pointer;cursor:hand}
+.tas{padding:3px 3px 3px 5px}
+.taf{padding:3px 3px 6px 5px}
+.tam{padding:6px 3px 6px 5px}
+.tal{padding:6px 3px 3px 5px}
+.sl,.r{font-weight:normal;margin:0;display:inline}
+.sl{font-size:84%}
+.r{font-size:1em}
+.e{margin:.75em 0}
+.g{margin:1em 0}
+.mblink:visited{color:#00c}
+.sm{display:block;margin:0;margin-left:40px}
+body,td,div,.p,a{font-family:arial,sans-serif}
+</style>
+
+    <!-- mootools (also used by Tangle) -->
+    <script type="text/javascript" src="mootools-core-with-Request.js"></script>
+    <script type="text/javascript" src="mootools-more-with-Request.JSONP.js"></script>
+
+    <!-- Tangle -->
+    <script type="text/javascript" src="Tangle.js"></script>
+
+    <!-- TangleKit (optional) -->
+    <link rel="stylesheet" href="TangleKit/TangleKit.css" type="text/css">
+    <script type="text/javascript" src="TangleKit/sprintf.js"></script>
+    <script type="text/javascript" src="TangleKit/BVTouchable.js"></script>
+    <script type="text/javascript" src="TangleKit/TangleKit.js"></script>
+
+    <script type="text/javascript" src="naclsqueak-glue.js"></script>
+    <script type="text/javascript" src="ScenarioListBox.js"></script>
+
+  <script type="text/javascript">
+
+    // tell Squeak which class should handle messages from JS
+    function squeakReady() {
+      sendToSqueak('eval: NativeClientBridge appClass: NaClMultiWorldApp');
+      }
+
+    // set up variables for Tangle
+    function setUpTangle () {
+        /*
+        var element = document.getElementById("example");
+        var tangle = new Tangle(element, 
+        {
+        initialize: function () { this.cookies = 4; },
+        update: function () { sendToSqueak(this.cookies.toString()); }
+        } );
+        */
+  }
+
+  var SelectionsChanged = function (ListBox) {
+      var listContents = new Array();
+      var worldContents = new Array();
+
+      listBoxes.forEach(function (list) {
+          var listItems = list.GetActiveItems();
+          if (listItems.length != 0) listContents.push(listItems);  // all lists will have something, or none
+      });
+
+      if (listContents.length == 0) return;      // nothing to report
+    
+      for (var w = 0; w < listContents[0].length; w++) {
+          var oneWorldValues = new Array();
+          listContents.forEach(function (list) {
+              oneWorldValues.push(list[w]);
+          });
+          worldContents.push(oneWorldValues);
+      }
+
+      sendToSqueak(JSON.stringify(worldContents));
+
+  }
+
+    var listBoxes = new Array();
+    function setupListBoxes()
+    {
+
+        for (var i = 0; i < 2; i++) {
+            var Arguments = {
+                Base: document.getElementById('base' + i),
+                Rows: 3,
+                Width: 200,
+                SelectionsChangedHandler: SelectionsChanged
+            };
+            listBoxes.push(new ListBox(Arguments));
+        }
+       listBoxes.forEach(function (each) { each.SetSynchronisedLists(listBoxes) });
+   }
+
+   function processImages() {
+       var canvases = document.getElementsByTagName('canvas');
+       var imageNames = new Array();
+       for (var i = 0; i < canvases.length; i++) {
+           var canvas = canvases[i];
+           var imageName = canvas.title;
+           if (imageNames.indexOf(imageName) == -1) imageNames.push(imageName);
+       }
+       sendToSqueak("eval: NativeClientBridge supplyImageData: '" + JSON.stringify(imageNames)+"'");
+   }
+
+   function loadImage(imageName, writeData) {
+       var canvases = document.getElementsByTagName('canvas');
+       for (var c = 0; c < canvases.length; c++) {
+           var canvasObj = canvases[c];
+           if (canvasObj.title == imageName) {
+               var canvasContext = canvasObj.getContext('2d');
+               var imageArray = canvasContext.getImageData(0, 0, canvasContext.canvas.width, canvasContext.canvas.height);
+               var imageData = imageArray.data;
+               for (var i = 0; i < imageData.length; i++) imageData[i] = writeData[i];
+               canvasContext.putImageData(imageArray, 0, 0);
+           }
+       }
+   }
+
+
+  </script>
+
+</head>
+<body onload="pageDidLoad();">
+
+<h2>Comparing scenarios through NaCl Squeak</h2>
+
+<div id="squeakApp"></div>
+
+<div id="listener"></div>
+<div><pre id="status_field"></pre></div>
+
+</body>
+</html>

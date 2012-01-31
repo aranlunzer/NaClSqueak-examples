@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>NaCl Squeak</title>
+
+    <style type="text/css">
+      body,div,p{font-family:arial,sans-serif}
+    </style>
+
+    <!-- mootools (also used by Tangle) -->
+    <script type="text/javascript" src="mootools-core-with-Request.js"></script>
+
+    <!-- Tangle -->
+    <script type="text/javascript" src="Tangle.js"></script>
+
+    <!-- TangleKit (optional) -->
+    <link rel="stylesheet" href="TangleKit/TangleKit.css" type="text/css">
+    <script type="text/javascript" src="TangleKit/sprintf.js"></script>
+    <script type="text/javascript" src="TangleKit/BVTouchable.js"></script>
+    <script type="text/javascript" src="TangleKit/TangleKit-ael.js"></script>
+
+    <script type="text/javascript" src="naclsqueak-glue.js"></script>
+    <script type="text/javascript" src="ScenarioListBox.js"></script>
+
+  <script type="text/javascript">
+
+      listBoxes = new Array();
+      results = new Array;
+
+    // tell Squeak which class should handle messages from JS
+    function squeakReady() {
+      sendToSqueak('eval: NativeClientBridge appClass: NaClWordWrapApp');
+      }
+
+
+      function setUpTangle() { }       // nothing to do (all tangles are in the list boxes)
+
+
+      function setupListBox(baseName, min, max, step, initial) {
+          var Arguments = {
+              Base: document.getElementById(baseName),
+              Type: 'tangle',
+              RangeMin: min,
+              RangeMax: max,
+              RangeStep: step,
+              InitialValue: initial,
+              Rows: 6,      // it's the minimum anyway
+              Width: 60,
+              SelectionsChangedHandler: SelectionsChanged
+          };
+
+          listBoxes.push(new ListBox(Arguments));
+      }
+
+    function setupListBoxSynchronisation() {
+            listBoxes.forEach(function (each) { each.SetSynchronisedLists(listBoxes) });
+      }
+
+      // handler for changes in the checked items in list boxes
+      var SelectionsChanged = function (ListBox) { sendParmsToSqueak() }
+
+      // handling new versions of the rules
+      function saveRule(ruleName,inputName) {
+          var values = new Object;
+          values[ruleName] = document.getElementById(inputName).value;
+          sendToSqueak(JSON.stringify(values));
+      }
+
+      // new text to wrap
+      function submitText() { sendParmsToSqueak() }
+
+      // new parameter values
+      function sendParmsToSqueak() {
+          if (true) {
+              var listContents = new Array();
+              var worldContents = new Array();
+
+              listBoxes.forEach(function (list) {
+                  var listItems = list.GetActiveItems();  // each item has Text, Value, and ColourIndex
+                  if (listItems.length != 0) listContents.push(listItems);  // all lists or none will have something, or none
+              });
+
+              if (listContents.length == 0) return;      // nothing to report
+
+              for (var w = 0; w < listContents[0].length; w++) {
+                  var oneWorldValues = new Object();
+                  for (var l = 0; l < listContents.length; l++) {
+                      var oneListContents = listContents[l];
+                      var worldValue = oneListContents[w];
+                      oneWorldValues["listVar" + l] = worldValue.Value;
+                      oneWorldValues.colourIndex = worldValue.ColourIndex;
+                      oneWorldValues.text = document.getElementById("text").value;    // shared
+                  }
+                  worldContents.push(oneWorldValues);
+              }
+
+              sendToSqueak(JSON.stringify(worldContents));
+
+          }
+      }
+
+      // receive a result
+      function acceptResult(id, content) {
+          results[id] = content;
+      }
+
+      // show a result
+      function showResult(id) {
+          document.getElementById("results").innerHTML = results[id];
+      }
+
+      // show several results
+      function showResultsUpTo(maxW) {
+          var resultElem = document.getElementById("results");
+          var resultControl = document.getElementById("resultControl");
+          resultElem.empty();
+          resultControl.empty();
+          for (var wn = 1; wn <= maxW; wn++) {
+              var elemStyle = "position: absolute; top: 0px; left: 0px";
+              var newElem = new Element("div", { id: "result" + wn, style: elemStyle });
+              newElem.innerHTML = results[wn];
+              resultElem.grab(newElem);
+
+              var resultControlElem = new Element("div",
+                 { style: "float: left; width: 30px",
+                   onmouseover: "resultsVisible("+wn+","+maxW+")",
+                   onmouseout: "resultsVisible(0,"+maxW+")" }
+                   );
+               resultControlElem.innerHTML = wn;
+               resultControl.grab(resultControlElem);
+          }
+      }
+
+    function resultsVisible(toShow,max) {
+        for (var wn=1; wn<=max; wn++) {
+            var visible = (toShow == wn || toShow == 0);
+            document.getElementById("result"+wn).style.visibility = visible ? "visible" : "hidden";
+            }
+        }
+
+  </script>
+</head>
+
+<body onload="pageDidLoad();">
+
+<h2>NaCl Squeak word wrap</h2>
+
+<!--<p id="rules">
+<div id="rule1col" style="float: left">
+<textarea rows="4" cols="50" id="rule1text"></textarea>
+<br />
+<input type="button" value="save" onclick="saveRule('rule1','rule1text')" />
+</div>
+<div id="rule2col" style="float: left">
+<textarea rows="4" cols="50" id="rule2text"></textarea>
+<br />
+<input type="button" value="save" onclick="saveRule('rule2','rule2text')" />
+</div>
+</p>
+-->
+
+<!--
+<p id="inputs" style="clear:both">
+<br />
+  Window width: <span data-var="width" class="TKAdjustableNumber" data-min="100" data-max="600" data-step="10"></span>.
+<br />
+  Font size: <span data-var="fontsize" class="TKAdjustableNumber" data-min="9" data-max="15"></span>.
+<br />
+  Leading: <span data-var="leading" class="TKAdjustableNumber" data-min="0" data-max="40"></span>.
+</p>
+-->
+
+<div id="appArea"></div>
+
+<br/>
+<div id="listener"></div>
+<div><pre id="status_field"></pre></div>
+
+</body>
+</html>

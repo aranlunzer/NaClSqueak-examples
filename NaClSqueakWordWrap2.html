@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Squeak on Native Client!</title>
+
+    <style type="text/css">
+      body,div,p{font-family:arial,sans-serif}
+    </style>
+
+    <!-- mootools (also used by Tangle) -->
+    <script type="text/javascript" src="mootools-core-with-Request.js"></script>
+
+    <!-- Tangle -->
+    <script type="text/javascript" src="Tangle.js"></script>
+
+    <!-- TangleKit (optional) -->
+    <link rel="stylesheet" href="TangleKit/TangleKit.css" type="text/css">
+    <script type="text/javascript" src="TangleKit/sprintf.js"></script>
+    <script type="text/javascript" src="TangleKit/BVTouchable.js"></script>
+    <script type="text/javascript" src="TangleKit/TangleKit.js"></script>
+
+    <script type="text/javascript" src="naclsqueak-glue.js"></script>
+
+  <script type="text/javascript">
+
+      tangle = null;
+      results = new Array;
+
+    // tell Squeak which class should handle messages from JS
+      function squeakReady() {
+          sendToSqueak('eval: NativeClientBridge appClass: NaClCompetitiveWordWrapApp');
+      }
+
+    // set up variables for Tangle
+    function setUpTangle () {
+      var element = document.getElementById("inputs");
+      tangle = new Tangle(element,
+          {
+              initialize: function () { this.minwidth = 120; this.width = 200; this.fontsize = 12; },
+              update: function () { sendParmsToSqueak(); }
+          });
+      }
+
+      // handling new versions of the rules
+      function saveRule(ruleName,inputName) {
+          var values = new Object;
+          values[ruleName] = document.getElementById(inputName).value;
+          sendToSqueak(JSON.stringify(values));
+      }
+
+      // new input text
+      function submitText() { sendParmsToSqueak() }
+
+      // new parameter values
+      function sendParmsToSqueak() {
+          if (tangle) {
+              var values = {
+                  text: document.getElementById("text").value,
+                  minwidth: tangle.getValue("minwidth"),
+                  width: tangle.getValue("width"),
+                  fontsize: tangle.getValue("fontsize")
+              };
+              // alert(JSON.stringify(values));
+              sendToSqueak(JSON.stringify(values));
+          }
+      }
+
+      // receive a result
+      function acceptResult(id, content) {
+          results[id] = content;
+      }
+
+      // show a result
+      function showResult(id) {
+          document.getElementById("wrapped").innerHTML = results[id];
+
+          var candThumbs = document.getElementById("candidateThumbs");
+          if (candThumbs) {
+              var index = 1;
+              candThumbs.getElements("div").each(function (el) {
+                  el.setStyle('color', (index == id) ? 'Red' : 'Black');
+                  index++;
+              });
+
+          }
+      }
+
+      // show/hide telltales - not used in this version
+      function showTelltales(bool) { }
+
+  </script>
+</head>
+
+<body onload="pageDidLoad();">
+
+<h2>NaCl Squeak word wrap</h2>
+
+<p id="inputs">
+  Minimum width: <span data-var="minwidth" class="TKAdjustableNumber" data-min="100" data-max="600" data-step="10"></span>.
+<br />
+  Maximum width: <span data-var="width" class="TKAdjustableNumber" data-min="100" data-max="600" data-step="10"></span>.
+<br />
+  Font size: <span data-var="fontsize" class="TKAdjustableNumber" data-min="9" data-max="15"></span>.
+<br />
+
+</p>
+
+<div id="textinput" style="float: left; width: 500px">
+<textarea rows="4" cols="50" id="text" onkeyup="submitText()"></textarea>
+</div>
+
+<div style="float: left; height: 100px" id="wrapped"></div>
+
+<div style="clear: both"><br /><hr /></div>
+
+<div id="candidates" style="width:900px"></div>
+
+<p>
+<div id="listener"></div>
+<div><pre id="status_field"></pre></div>
+</p>
+
+</body>
+</html>

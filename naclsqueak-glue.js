@@ -1,5 +1,7 @@
 // NaClSqueak <=> JS glue
 
+    naclsqueakImageName = 'NaClSqueak-expts.image';
+
     naclsqueakModule = null;  // Global application object.
     statusText = '';
     developmentMode = document.URL.indexOf("localhost:8003") >= 0;
@@ -104,7 +106,7 @@
     	req.addEventListener("load", transferComplete, false);  
     	req.addEventListener("error", transferFailed, false);  
     	req.addEventListener("abort", transferCanceled, false);  
-        req.open('GET', 'NaClSqueak-seaside-expts.image', true);
+        req.open('GET', naclsqueakImageName, true);
     	req.overrideMimeType('text/plain; charset=x-user-defined');
     	req.setRequestHeader("If-Modified-Since", "Sun, 23 Oct 2011 00:00:00 GMT");
         req.send(null);
